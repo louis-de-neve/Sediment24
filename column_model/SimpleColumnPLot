@@ -1,0 +1,23 @@
+using Oceananigans, OceanBioME
+using Plots
+using Printf
+using Oceananigans.Units
+
+
+grid2 = RectilinearGrid(topology = (Flat, Flat, Bounded), size = (100, ), extent = (100, ))
+
+# Now, read the data and plot the results
+P = FieldTimeSeries("SimpleColumn copy.jld2", "P")
+Z = FieldTimeSeries("SimpleColumn copy.jld2", "Z")
+
+# Get the gridpoints (all we need is zc)
+xc, yc, zc = nodes(grid2, Center(), Center(), Center())
+
+# Extract an array of times when the data was saved
+times = P.times
+
+hmP = heatmap(times , zc, log10.(abs.(P[1, 1, 1:grid2.Nz, 1:end])), label="log10(Phytoplankton)")
+
+hmZ = heatmap(times , zc, log10.(abs.(Z[1, 1, 1:grid2.Nz, 1:end])), label="log10(Zooplankton)")
+
+plot(hmP, hmZ, layout=(2,1), size=(1600, 400))
