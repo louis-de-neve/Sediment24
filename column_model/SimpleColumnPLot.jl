@@ -25,8 +25,9 @@ function MakePlotOfColumn(filename="ColumnOutput",
     for (index, tracer) in enumerate(plotting_tracers)
 
         data_fts = FieldTimeSeries("$filename.jld2", tracer)
-
-        ax = Axis(fig[index, 1]; title = "Phytoplankton concentration", axis_kwargs...)
+        
+        tracer_title = tracer_titles[i]
+        ax = Axis(fig[index, 1]; title = "$tracer_title concentration", axis_kwargs...)
         ax.xticks = (collect(tick_location_seconds), string.(collect(tick_location_days)))
         
         hm = heatmap!(ax, times, zc, log10.(abs.(data_fts[1, 1, 1:end, 1:end]')), interpolate=true)
