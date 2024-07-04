@@ -55,8 +55,6 @@ guess = [16, 1.7, 47]
 
 def sinfunc(t, A, p, c):  return A * np.sin(0.0172*t + p) + c
 popt, pcov = scipy.optimize.curve_fit(sinfunc, new_time_array, new_data_array, p0=guess)
-print(popt)
-print(np.sqrt(np.diag(pcov)))
 A, p, c = popt
 
 #REPLOTS WITH NEW DATA
@@ -66,6 +64,7 @@ ax2.plot(time_array, sinfunc(np.asarray(time_array), A, p, c), color="red", labe
 ax2.legend(loc="lower left", frameon=False)
 ax2.set_xlabel("Days since January 1st 2023")
 ax2.set_ylabel(r"PAR / einstein m$^{-2}$ day$^{-1}$")
+ax2.set_ylim(20, 70)
 
 #PLOTTING STUFF
 fig.suptitle("First and Second order fitting of the Photosynthetically Active Radiation in Luderitz", fontsize=18)
