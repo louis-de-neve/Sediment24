@@ -1,5 +1,5 @@
 using Oceananigans, OceanBioME
-using Plots
+using CairoMakie
 using Printf
 using Oceananigans.Units
 
@@ -8,9 +8,17 @@ using Oceananigans.Units
 @info "Defining model..."
 
 grid = RectilinearGrid(topology = (Flat, Flat, Bounded), size = (20, ), extent = (40, ))
-#sediment_model = SimpleMultiG(; grid)
 
-default_surface_PAR(t) = 100 * max(0, (cos(t * π / 12hours) * (cos(t * 2 * π / 365days) + 1)))
+@inline function daily_fluctuation(t)
+    return max(0, (cos(t * π / 12hours)))
+end
+@inline function yearly_fluctuation(t)
+    return (cos(t * 2 * π / 365days) + 1)
+end
+@inline function default_surface_PAR(t)
+    return 100 * daily_fluctuation(t) * yearly_fluctuation(t)
+end
+
 bgc = LOBSTER(; grid,
                 carbonates=true,
                 oxygen=true,
@@ -32,7 +40,7 @@ set!(model, P = 0.4686, Z = 0.5363,
 
 @info "Setting up simulation..."
 
-simulation = Simulation(model, Δt = 100, stop_time = 365days)
+simulation = Simulation(model, Δt = 100, stop_time = 10days)
 
 simulation.output_writers[:tracers] = JLD2OutputWriter(model, model.tracers,
                                                filename = "SimpleColumn.jld2",
@@ -52,19 +60,3 @@ simulation.callbacks[:progress] = Callback(progress, IterationInterval(1000))
 
 @info "Simulation setup, running..."
 run!(simulation)
-
-# Now, read the data and plot the results
-P = FieldTimeSeries("SimpleColumn.jld2", "P")
-Z = FieldTimeSeries("SimpleColumn.jld2", "Z")
-
-# Get the gridpoints (all we need is zc)
-xc, yc, zc = nodes(grid, Center(), Center(), Center())
-
-# Extract an array of times when the data was saved
-times = P.times
-
-hmP = heatmap(times , zc, log10.(abs.(P[1, 1, 1:grid.Nz, 1:end])), label="log10(Phytoplankton)")
-
-hmZ = heatmap(times , zc, log10.(abs.(Z[1, 1, 1:grid.Nz, 1:end])), label="log10(Zooplankton)")
-
-plot(hmP, hmZ, layout=(2,1))
