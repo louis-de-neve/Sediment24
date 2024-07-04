@@ -9,14 +9,14 @@ using Oceananigans.Units
 
 grid = RectilinearGrid(topology = (Flat, Flat, Bounded), size = (20, ), extent = (40, ))
 
-@inline function daily_fluctuation(t)
+@inline function PAR_daily_fluctuation(t)
     return max(0, (cos(t * π / 12hours)))
 end
-@inline function yearly_fluctuation(t)
+@inline function PAR_yearly_fluctuation(t)
     return (cos(t * 2 * π / 365days) + 1)
 end
 @inline function default_surface_PAR(t)
-    return 100 * daily_fluctuation(t) * yearly_fluctuation(t)
+    return 100 * PAR_daily_fluctuation(t) * PAR_yearly_fluctuation(t)
 end
 
 bgc = LOBSTER(; grid,
