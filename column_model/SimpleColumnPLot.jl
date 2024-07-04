@@ -20,13 +20,13 @@ function MakePlotOfColumn(filename="ColumnOutput",
     tick_location_seconds = range(0, times[end]; length=5)
     tick_location_days = tick_location_seconds/(24*60*60)
 
-    axis_kwargs = (xlabel = "time / days", ylabel = "z / m", width = 800, height = 150)
+    axis_kwargs = (xlabel = "Days since January 1st 2023", ylabel = "z / m", width = 800, height = 150)
 
     for (index, tracer) in enumerate(plotting_tracers)
 
         data_fts = FieldTimeSeries("$filename.jld2", tracer)
         
-        tracer_title = tracer_titles[i]
+        tracer_title = tracer_titles[index]
         ax = Axis(fig[index, 1]; title = "$tracer_title concentration", axis_kwargs...)
         ax.xticks = (collect(tick_location_seconds), string.(collect(tick_location_days)))
         
@@ -34,6 +34,13 @@ function MakePlotOfColumn(filename="ColumnOutput",
         Colorbar(fig[index, 2], hm, label="log₁₀ mmol N / m³")
 
     end
+
+    Label(
+        fig[begin-1, 1:2],
+        "LOBSTER biogeochemical tracers with accurate \nphotosynthetically active radiation flux in Luderitz, Namibia",
+        fontsize = 30,
+        padding = (0, 0, 0, 0),
+    )
+
     return fig
 end
-

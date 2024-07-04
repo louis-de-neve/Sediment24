@@ -11,12 +11,20 @@ end
 function PAR_yearly_fluctuation(t)
     return (cos(t * 2 * π / 365days) + 1)
 end
+function PAR_Aqua_MODIS_fluctuations(t)
+    return (18.9 * sin((2 * π * t / 365days) + 1.711) + 50.01)
+end
+
 function default_surface_PAR(t)
     return 100 * PAR_daily_fluctuation(t) * PAR_yearly_fluctuation(t)
 end
 
+function Aqua_MODIS_PAR(t)
+    return PAR_daily_fluctuation(t) * PAR_Aqua_MODIS_fluctuations(t)
+end
 
-@inline function DefineColumnModel(sim_height::Int64=50)::Oceananigans.AbstractModel
+
+@inline function DefineColumnModel(PAR_function, sim_height::Int64=50)::Oceananigans.AbstractModel
     @info "Defining model..."
 
     grid = RectilinearGrid(topology = (Flat, Flat, Bounded), size = (sim_height, ), extent = (sim_height, ))
@@ -25,7 +33,7 @@ end
                     carbonates=true,
                     oxygen=true,
                     variable_redfield=true,
-                    surface_photosynthetically_active_radiation = default_surface_PAR)
+                    surface_photosynthetically_active_radiation = PAR_function)
 
     model = NonhydrostaticModel(; grid,
                                 #timestepper= :RungeKutta3,
@@ -78,11 +86,11 @@ end
 κₜ = 1e-6 #1e-6 (diffustion constant)
 
 const SIMULATION_HEIGHT = 50 # meters
-const SIMULATION_TIME = 150days # seconds or any Oceananigans unit
+const SIMULATION_TIME = 365days # seconds or any Oceananigans unit
 const SIMULATION_TIMESTEP = 100 # seconds
 const SAVEFILE_NAME = "SimpleColumnSave"
 
-model = DefineColumnModel(SIMULATION_HEIGHT)
+model = DefineColumnModel(Aqua_MODIS_PAR, SIMULATION_HEIGHT)
 simulation = CreateColumnSimulation(model, SAVEFILE_NAME, SIMULATION_TIME, SIMULATION_TIMESTEP)
 run!(simulation)
-MakePlotOfColumn(savefile_name, ("P", "Z"), ("Phytoplankton", "Zooplankton"))
+MakePlotOfColumn(SAVEFILE_NAME, ("P", "Z"), ("Phytoplankton", "Zooplankton"))

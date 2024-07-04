@@ -68,7 +68,7 @@ ax2.set_ylim(20, 70)
 ax2.set_xlim(0, 365)
 
 #PLOTTING STUFF
-fig.suptitle("First and Second order fitting of the Photosynthetically Active Radiation in Luderitz", fontsize=18)
+fig.suptitle("First and Second order fitting of the Photosynthetically Active Radiation in Luderitz, Namibia", fontsize=18)
 fig.tight_layout()
 fig.savefig("PAR/ParSecondPass.png")
 
