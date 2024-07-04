@@ -39,7 +39,7 @@ ax.legend(loc="lower left", frameon=False)
 ax.set_xlabel("Days since January 1st 2023")
 ax.set_ylabel(r"PAR / einstein m$^{-2}$ day$^{-1}$")
 ax.set_ylim(0, 70)
-
+ax.set_xlim(0, 365)
 
 # drops erroneous PAR readings
 new_time_array = []
@@ -65,6 +65,7 @@ ax2.legend(loc="lower left", frameon=False)
 ax2.set_xlabel("Days since January 1st 2023")
 ax2.set_ylabel(r"PAR / einstein m$^{-2}$ day$^{-1}$")
 ax2.set_ylim(20, 70)
+ax2.set_xlim(0, 365)
 
 #PLOTTING STUFF
 fig.suptitle("First and Second order fitting of the Photosynthetically Active Radiation in Luderitz", fontsize=18)
