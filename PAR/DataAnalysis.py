@@ -36,7 +36,7 @@ def PAR(t):
 fig, axs = plt.subplots(3, 1, figsize=(9, 18), sharex=True)
 ax, ax2, ax3 = axs
 first_pass_label = r"First Fit: PAR($t$) = $19$ sin$(2 \pi / 365$ $t + 1.72) + 49$"
-ax.scatter(time_array, data_array, label="Aqua-MODIS data")
+ax.scatter(time_array, data_array, label="Aqua-MODIS data", marker='x', color='black', linewidth=1)
 ax.plot(time_array, PAR(np.asarray(time_array)), color="red", label=first_pass_label)
 ax.legend(loc="lower left", frameon=False)
 #ax.set_xlabel("Days since January 1st 2023")
@@ -53,9 +53,6 @@ for i, value in enumerate(time_array):
     if np.abs(data_array[i] - PAR(value)) < 4:
         new_data_array.append(data_array[i])
         new_time_array.append(time_array[i])
-
-
-
         
 #optimises
 guess = [16, 1.7, 47]
@@ -65,7 +62,7 @@ popt, pcov = scipy.optimize.curve_fit(sinfunc, new_time_array, new_data_array, p
 A, p, c = popt
 
 #REPLOTS WITH NEW DATA
-ax2.scatter(new_time_array, new_data_array, label="Aqua-MODIS data")
+ax2.scatter(new_time_array, new_data_array, label="Aqua-MODIS data", marker='x', color='black', linewidth=1)
 second_pass_label = r"Second Fit (Optimized Curve): PAR($t$) = $18.9±0.1$ sin$(2 \pi / 365$ $t + 1.711±0.007) + 50.01±0.01$"
 ax2.plot(time_array, sinfunc(np.asarray(time_array), A, p, c), color="orange", label=second_pass_label)
 ax2.legend(loc="lower left", frameon=False)
@@ -75,7 +72,7 @@ ax2.set_ylim(20, 70)
 ax2.set_yticks([25, 35, 45, 55, 65])
 #ax2.set_xlim(0, 365)
 
-ax3.scatter(time_array, data_array, label="Aqua-MODIS data")
+ax3.scatter(time_array, data_array, label="Aqua-MODIS data", marker='x', color='black', linewidth=1)
 third_pass_label = r"Third Fit (Conserving Annual Mean): PAR($t$) = $18.9±0.1$ sin$(2 \pi / 365$ $t + 1.711±0.007) + 46.62$ "
 ax3.plot(time_array, sinfunc(np.asarray(time_array), A, p, original_mean), color="green", label=third_pass_label)
 ax3.legend(loc="lower left", frameon=False)
@@ -91,5 +88,5 @@ ax3.set_xlim(0, 365)
 fig.suptitle("First, Second and Third order fitting of the \nPhotosynthetically Active Radiation in Luderitz, Namibia", fontsize=18)
 fig.tight_layout()
 fig.subplots_adjust(hspace=0)
-fig.savefig("PAR/ParThirdPass.png")
+fig.savefig("PAR/ParThirdPass.png", dpi=300)
 
