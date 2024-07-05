@@ -91,5 +91,5 @@ ax3.set_xlim(0, 365)
 fig.suptitle("First, Second and Third order fitting of the \nPhotosynthetically Active Radiation in Luderitz, Namibia", fontsize=18)
 fig.tight_layout()
 fig.subplots_adjust(hspace=0)
-fig.savefig("PAR/ParSecondPass.png")
+fig.savefig("PAR/ParThirdPass.png")
 
