@@ -12,7 +12,7 @@ function PAR_yearly_fluctuation(t)
     return (cos(t * 2 * π / 365days) + 1)
 end
 function PAR_Aqua_MODIS_fluctuations(t)
-    return (18.9 * sin((2 * π * t / 365days) + 1.711) + 50.01)
+    return (18.9 * sin((2 * π * t / 365days) + 1.711) + 46.62)
 end
 
 function default_surface_PAR(t)
