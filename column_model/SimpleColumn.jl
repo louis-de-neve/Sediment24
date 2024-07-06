@@ -6,7 +6,7 @@ using FileIO
 
 include("SimpleColumnPLot.jl")
 
-@inline function import_previous_model_state!(model)::Nothing
+@inline function import_previous_model_state!(model::Oceananigans.AbstractModel)::Nothing
     @info "Importing previous data"
 
     state_dict = Dict()
@@ -30,9 +30,9 @@ par_aqua_modis_fluctuations(t) = 18.9 * sin((2 * π * t / 365days) + 1.711) + 46
     return par_aqua_modis_fluctuations(rebased_time) * par_daily_fluctuation(rebased_time)
 end
 
-@inline function setup_column_model(sim_height::Int64=50,
-                                    κₜ = 1e-6,
-                                    continue_from_previous::Bool=false
+@inline function setup_column_model(sim_height::Int64,
+                                    κₜ::Float64,
+                                    continue_from_previous::Bool
                                     )::Tuple{Oceananigans.AbstractModel, Int64}
     @info "Defining model..."
 
@@ -64,16 +64,17 @@ end
                 DOC = 5.3390, DON = 0.8115,
                 sPON = 0.2299, sPOC = 1.5080,
                 bPON = 0.0103, bPOC = 0.0781) =#
-    P(z) = 0.1 .- z./250
-    Z(z) = -z/500
+    P(z) = 0.1 .- z ./ 250
+    Z(z) = .- z ./ 500
 
-    set!(model, P = P, Z = 0.2,     
+    set!(model, P = P, Z = Z,     
                 NO₃ = 2.3103, NH₄ = 0.0010, 
                 DIC = 2106.9, Alk = 2408.9, 
                 O₂ = 258.92, 
                 DOC = 5.3390, DON = 0.8115,
                 sPON = 0.2299, sPOC = 1.5080,
                 bPON = 0.0103, bPOC = 0.0781)
+
     if continue_from_previous
         import_previous_model_state!(model)
     end
@@ -82,8 +83,8 @@ end
 end
 
 @inline function run_column_simulation!(model::Oceananigans.AbstractModel,
-                                        sim_time::Float64=10days,
-                                        sim_timestep::Int64=100
+                                        sim_time::Float64,
+                                        sim_timestep::Int64
                                         )::Nothing
     @info "Setting up simulation..."
 
@@ -121,6 +122,8 @@ end
                                 continue_from_previous::Bool=false,
                                 tracer_plotting_options::Vector{TracerInfo}=nothing
                                 )::Nothing
+    @info "Making a simple column model, please wait :)"
+
     model, initial_time = setup_column_model(column_height, κₜ, continue_from_previous)
     run_column_simulation!(model, simulation_time, simulation_timestep)
     
