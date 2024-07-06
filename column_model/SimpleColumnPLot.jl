@@ -4,6 +4,7 @@ using Oceananigans.Units
 using Oceananigans
 
 function MakePlotOfColumn(filename="ColumnOutput",
+                          start_time::Int64=0,
                           plotting_tracers::Tuple=("P", "Z"),
                           tracer_titles::Tuple=("Phytoplankton", "Zooplankton")
                           )
@@ -16,7 +17,7 @@ function MakePlotOfColumn(filename="ColumnOutput",
 
     first_tracer_fts = FieldTimeSeries("$filename.jld2", plotting_tracers[1])
     xc, yc, zc = nodes(first_tracer_fts)
-    times = first_tracer_fts.times
+    times = first_tracer_fts.times .+ start_time
     tick_location_seconds = range(0, times[end]; length=5)
     tick_location_days = tick_location_seconds/(24*60*60)
 

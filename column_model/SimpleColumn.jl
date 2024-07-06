@@ -2,30 +2,43 @@ using Oceananigans, OceanBioME
 using CairoMakie
 using Printf
 using Oceananigans.Units
+using FileIO
 
 include("SimpleColumnPLot.jl")
 
 function PAR_daily_fluctuation(t)
     return (cos(t * π / 12hours + π) + 1)
 end
-function PAR_yearly_fluctuation(t)
-    return (cos(t * 2 * π / 365days) + 1)
-end
 function PAR_Aqua_MODIS_fluctuations(t)
     return (18.9 * sin((2 * π * t / 365days) + 1.711) + 46.62)
 end
 
-function default_surface_PAR(t)
-    return 50 * PAR_daily_fluctuation(t) * PAR_yearly_fluctuation(t)
+@inline function ImportPreviousState(model, initial_filename::String="SimpleColumnSave")::Nothing
+    @info "Importing previous data"
+    state_dict = Dict()
+    for tracer in keys(model.tracers)
+        data_fts = FieldTimeSeries("$initial_filename.jld2", string(tracer))
+        tracer_previous_state = parent(data_fts[:, :, :, end[]])
+        state_dict[tracer] = tracer_previous_state
+    end
+    set!(model; state_dict...)
 end
 
-function Aqua_MODIS_PAR(t)
-    return PAR_Aqua_MODIS_fluctuations(t) * PAR_daily_fluctuation(t)
-end
 
-
-@inline function DefineColumnModel(PAR_function, sim_height::Int64=50)::Oceananigans.AbstractModel
+@inline function DefineColumnModel(sim_height::Int64=50,
+                                   initial_file_name::String="SimpleColumnSave",
+                                   continue_from_previous::Bool=False)::Tuple{Oceananigans.AbstractModel, Int64}
     @info "Defining model..."
+
+    if continue_from_previous
+        initial_time = load("LastSimulationTimestep.jld2", "time")
+    else
+        initial_time = 0
+    end
+
+    function Aqua_MODIS_PAR(t; initial_time=0)
+        return PAR_Aqua_MODIS_fluctuations(t+initial_time) * PAR_daily_fluctuation(t+initial_time)
+    end
 
     grid = RectilinearGrid(topology = (Flat, Flat, Bounded), size = (sim_height, ), extent = (sim_height, ))
 
@@ -33,7 +46,7 @@ end
                     carbonates=true,
                     oxygen=true,
                     variable_redfield=true,
-                    surface_photosynthetically_active_radiation = PAR_function)
+                    surface_photosynthetically_active_radiation = Aqua_MODIS_PAR)
 
     model = NonhydrostaticModel(; grid,
                                 #timestepper= :RungeKutta3,
@@ -58,8 +71,11 @@ end
                 DOC = 5.3390, DON = 0.8115,
                 sPON = 0.2299, sPOC = 1.5080,
                 bPON = 0.0103, bPOC = 0.0781)
+    if continue_from_previous
+        ImportPreviousState(model, initial_file_name)
+    end
 
-    return model
+    return model, initial_time
 end
 
 
@@ -71,7 +87,7 @@ end
     @info "Setting up simulation..."
 
     simulation = Simulation(model, Δt = sim_timestep, stop_time = sim_time)
-    println(model.tracers)
+    #println(model.tracers)
     simulation.output_writers[:tracers] = JLD2OutputWriter(model, model.tracers,
                                                 filename = "$outfile_location.jld2",
                                                 schedule = TimeInterval(24minute),
@@ -94,12 +110,15 @@ end
 
 κₜ = 1e-6 #1e-6 (diffustion constant)
 
-const SIMULATION_HEIGHT = 50 # meters
-const SIMULATION_TIME = 10days # seconds or any Oceananigans unit
-const SIMULATION_TIMESTEP = 100 # seconds
-const SAVEFILE_NAME = "SimpleColumnSave"
+SIMULATION_HEIGHT = 50 # meters
+SIMULATION_TIME = 365days # seconds or any Oceananigans unit
+SIMULATION_TIMESTEP = 100 # seconds
+START_SAVEFILE_NAME = "SimpleColumnSave"
+FINAL_SAVEFILE_NAME = "SimpleColumnSave1"
 
-model = DefineColumnModel(Aqua_MODIS_PAR, SIMULATION_HEIGHT)
-simulation = CreateColumnSimulation(model, SAVEFILE_NAME, SIMULATION_TIME, SIMULATION_TIMESTEP)
+model, initial_time = DefineColumnModel(SIMULATION_HEIGHT, START_SAVEFILE_NAME, true)
+simulation = CreateColumnSimulation(model, FINAL_SAVEFILE_NAME, SIMULATION_TIME, SIMULATION_TIMESTEP)
 run!(simulation)
-MakePlotOfColumn(SAVEFILE_NAME, ("P", "Z", "Alk"), ("Phytoplankton", "Zooplankton", "Alkalinity"))
+final_time = initial_time + SIMULATION_TIME
+save("LastSimulationTimestep.jld2", "time", final_time)
+MakePlotOfColumn(FINAL_SAVEFILE_NAME, initial_time, ("P", "Z"), ("Phytoplankton", "Zooplankton"))
