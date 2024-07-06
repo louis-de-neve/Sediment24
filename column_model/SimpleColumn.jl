@@ -6,28 +6,34 @@ using FileIO
 
 include("SimpleColumnPLot.jl")
 
-function PAR_daily_fluctuation(t)
-    return (cos(t * π / 12hours + π) + 1)
-end
-function PAR_Aqua_MODIS_fluctuations(t)
-    return (18.9 * sin((2 * π * t / 365days) + 1.711) + 46.62)
-end
-
-@inline function ImportPreviousState(model, initial_filename::String="SimpleColumnSave")::Nothing
+@inline function import_previous_model_state!(model)::Nothing
     @info "Importing previous data"
+
     state_dict = Dict()
+
     for tracer in keys(model.tracers)
-        data_fts = FieldTimeSeries("$initial_filename.jld2", string(tracer))
+        data_fts = FieldTimeSeries("temp_final_state.jld2", string(tracer))
         tracer_previous_state = parent(data_fts[:, :, :, end[]])
         state_dict[tracer] = tracer_previous_state
     end
     set!(model; state_dict...)
+
+    return nothing
 end
 
+par_daily_fluctuation(t) = cos(t * π / 12hours + π) + 1
 
-@inline function DefineColumnModel(sim_height::Int64=50,
-                                   initial_file_name::String="SimpleColumnSave",
-                                   continue_from_previous::Bool=False)::Tuple{Oceananigans.AbstractModel, Int64}
+par_aqua_modis_fluctuations(t) = 18.9 * sin((2 * π * t / 365days) + 1.711) + 46.62
+
+@inline function define_par_function(t; initial_time=0)
+    rebased_time = t + initial_time
+    return par_aqua_modis_fluctuations(rebased_time) * par_daily_fluctuation(rebased_time)
+end
+
+@inline function setup_column_model(sim_height::Int64=50,
+                                    κₜ = 1e-6,
+                                    continue_from_previous::Bool=false
+                                    )::Tuple{Oceananigans.AbstractModel, Int64}
     @info "Defining model..."
 
     if continue_from_previous
@@ -35,24 +41,21 @@ end
     else
         initial_time = 0
     end
-
-    function Aqua_MODIS_PAR(t; initial_time=0)
-        return PAR_Aqua_MODIS_fluctuations(t+initial_time) * PAR_daily_fluctuation(t+initial_time)
-    end
-
+  
     grid = RectilinearGrid(topology = (Flat, Flat, Bounded), size = (sim_height, ), extent = (sim_height, ))
 
     bgc = LOBSTER(; grid,
                     carbonates=true,
                     oxygen=true,
                     variable_redfield=true,
-                    surface_photosynthetically_active_radiation = Aqua_MODIS_PAR)
+                    surface_photosynthetically_active_radiation = define_par_function)
+
+    
 
     model = NonhydrostaticModel(; grid,
                                 #timestepper= :RungeKutta3,
                                 biogeochemistry=bgc, 
-                                closure = ScalarDiffusivity(ν = κₜ, κ = κₜ)
-                                )
+                                closure = ScalarDiffusivity(ν = κₜ, κ = κₜ))
     #=                          
     set!(model, P = 0.4686, Z = 0.5363,     
                 NO₃ = 2.3103, NH₄ = 0.0010, 
@@ -72,26 +75,30 @@ end
                 sPON = 0.2299, sPOC = 1.5080,
                 bPON = 0.0103, bPOC = 0.0781)
     if continue_from_previous
-        ImportPreviousState(model, initial_file_name)
+        import_previous_model_state!(model)
     end
 
     return model, initial_time
 end
 
-
-@inline function CreateColumnSimulation(model::Oceananigans.AbstractModel,
-                                        outfile_location::String="ColumnOutput",
+@inline function run_column_simulation!(model::Oceananigans.AbstractModel,
                                         sim_time::Float64=10days,
                                         sim_timestep::Int64=100
-                                        )::Oceananigans.Simulation
+                                        )::Nothing
     @info "Setting up simulation..."
 
     simulation = Simulation(model, Δt = sim_timestep, stop_time = sim_time)
-    #println(model.tracers)
+
     simulation.output_writers[:tracers] = JLD2OutputWriter(model, model.tracers,
-                                                filename = "$outfile_location.jld2",
+                                                filename = "temp_plotting_data.jld2",
                                                 schedule = TimeInterval(24minute),
                                                 overwrite_existing = true)
+    simulation.output_writers[:tracers2] = JLD2OutputWriter(model, model.tracers,
+                                                filename = "temp_final_state.jld2",
+                                                schedule = TimeInterval(simulation.stop_time),
+                                                overwrite_existing = true)
+                                                
+
 
     start_time = time_ns() # record the start time
 
@@ -103,22 +110,36 @@ end
 
     # Display the progress message every 1000 timesteps
     simulation.callbacks[:progress] = Callback(progress, IterationInterval(1000))
-
-    return simulation
+    run!(simulation)
+    return nothing
 end
 
+@inline function simple_column!(column_height::Int64=50,
+                                simulation_time::Float64=5days,
+                                simulation_timestep::Int64=100,
+                                κₜ::Float64=1e-6,
+                                continue_from_previous::Bool=false,
+                                tracer_plotting_options::Vector{TracerInfo}=nothing
+                                )::Nothing
+    model, initial_time = setup_column_model(column_height, κₜ, continue_from_previous)
+    run_column_simulation!(model, simulation_time, simulation_timestep)
+    
+    final_time = initial_time + simulation_time
+    save("LastSimulationTimestep.jld2", "time", final_time)
 
-κₜ = 1e-6 #1e-6 (diffustion constant)
+    make_plot_of_column_simulation!(initial_time, tracer_plotting_options)
+    return nothing
+end
 
-SIMULATION_HEIGHT = 50 # meters
-SIMULATION_TIME = 365days # seconds or any Oceananigans unit
+SIMULATION_COLUMN_HEIGHT = 50 # meters
+SIMULATION_TIME = 5days # seconds or any Oceananigans unit
 SIMULATION_TIMESTEP = 100 # seconds
-START_SAVEFILE_NAME = "SimpleColumnSave"
-FINAL_SAVEFILE_NAME = "SimpleColumnSave1"
+DIFFUSION_CONSTANT = 1e-6
+CONTINUE_SIM = false
 
-model, initial_time = DefineColumnModel(SIMULATION_HEIGHT, START_SAVEFILE_NAME, true)
-simulation = CreateColumnSimulation(model, FINAL_SAVEFILE_NAME, SIMULATION_TIME, SIMULATION_TIMESTEP)
-run!(simulation)
-final_time = initial_time + SIMULATION_TIME
-save("LastSimulationTimestep.jld2", "time", final_time)
-MakePlotOfColumn(FINAL_SAVEFILE_NAME, initial_time, ("P", "Z"), ("Phytoplankton", "Zooplankton"))
+tracer_infos_to_plot = TracerInfo[]
+push!(tracer_infos_to_plot, TracerInfo("P", "Phytoplankton Concentration", "mmol N / m³"))
+push!(tracer_infos_to_plot, TracerInfo("Z", "Zooplankton Concentration", "mmol N / m³"))
+
+simple_column!(SIMULATION_COLUMN_HEIGHT, SIMULATION_TIME, SIMULATION_TIMESTEP, DIFFUSION_CONSTANT, CONTINUE_SIM, tracer_infos_to_plot)
+
