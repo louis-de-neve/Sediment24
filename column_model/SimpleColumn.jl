@@ -64,8 +64,11 @@ end
                 DOC = 5.3390, DON = 0.8115,
                 sPON = 0.2299, sPOC = 1.5080,
                 bPON = 0.0103, bPOC = 0.0781) =#
+
+    #=THESE P and Z FUNCTIONS ARE VERY ROUGH APPROXIMATIONS
+      OF THE FINAL DISTRIBUTION AFTER A YEAR OF SIMULATION =#
     P(z) = 0.1 .- z ./ 250
-    Z(z) = .- z ./ 500
+    Z(z) = .- z ./ 500 .+ 0.01
 
     set!(model, P = P, Z = Z,     
                 NO₃ = 2.3103, NH₄ = 0.0010, 
@@ -135,10 +138,10 @@ end
 end
 
 SIMULATION_COLUMN_HEIGHT = 50 # meters
-SIMULATION_TIME = 5days # seconds or any Oceananigans unit
+SIMULATION_TIME = 50days # seconds or any Oceananigans unit
 SIMULATION_TIMESTEP = 100 # seconds
 DIFFUSION_CONSTANT = 1e-6
-CONTINUE_SIM = false
+CONTINUE_SIM = true
 
 tracer_infos_to_plot = TracerInfo[]
 push!(tracer_infos_to_plot, TracerInfo("P", "Phytoplankton Concentration", "mmol N / m³"))
