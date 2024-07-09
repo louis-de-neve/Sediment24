@@ -138,10 +138,10 @@ end
 end
 
 SIMULATION_COLUMN_HEIGHT = 50 # meters
-SIMULATION_TIME = 50days # seconds or any Oceananigans unit
+SIMULATION_TIME = 30days # seconds or any Oceananigans unit
 SIMULATION_TIMESTEP = 100 # seconds
 DIFFUSION_CONSTANT = 1e-6
-CONTINUE_SIM = true
+CONTINUE_SIM = false
 
 tracer_infos_to_plot = TracerInfo[]
 push!(tracer_infos_to_plot, TracerInfo("P", "Phytoplankton Concentration", "mmol N / m³"))
