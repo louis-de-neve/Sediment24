@@ -149,3 +149,6 @@ push!(tracer_infos_to_plot, TracerInfo("Z", "Zooplankton Concentration", "mmol N
 
 simple_column!(SIMULATION_COLUMN_HEIGHT, SIMULATION_TIME, SIMULATION_TIMESTEP, DIFFUSION_CONSTANT, CONTINUE_SIM, tracer_infos_to_plot)
 
+
+include("../Chlorophyll/chlorophyll.jl")
+chlorophyll_graph!()
