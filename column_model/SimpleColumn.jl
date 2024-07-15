@@ -101,7 +101,7 @@ end
                                                 filename = "temp_final_state.jld2",
                                                 schedule = TimeInterval(simulation.stop_time),
                                                 overwrite_existing = true)
-                                                
+                                     
 
 
     start_time = time_ns() # record the start time
@@ -137,11 +137,11 @@ end
     return nothing
 end
 
-SIMULATION_COLUMN_HEIGHT = 50 # meters
-SIMULATION_TIME = 30days # seconds or any Oceananigans unit
+SIMULATION_COLUMN_HEIGHT = 100 # meters
+SIMULATION_TIME = 90days # seconds or any Oceananigans unit
 SIMULATION_TIMESTEP = 100 # seconds
 DIFFUSION_CONSTANT = 1e-6
-CONTINUE_SIM = true
+CONTINUE_SIM = false
 
 tracer_infos_to_plot = TracerInfo[]
 push!(tracer_infos_to_plot, TracerInfo("P", "Phytoplankton Concentration", "mmol N / m³"))

@@ -17,7 +17,7 @@ function chlorophyll_graph!()::Nothing
     clin2 = lines!(data_upwelling[!, "depth"][1:1:23], data_upwelling[!, "chl"][1:1:23]/4)
     plin = lines!(-zc, zdata)
     xlims!(0, 100)
-    Legend(fig[1, 2], [clin, clin2, plin], ["Chlorophyll from MyOcean (offshore, no upwelling)", "Chlorophyll from MyOcean (upwelling)", "Chlorophyll from model"])
+    Legend(fig[1, 2], [clin, clin2, plin], ["Chlorophyll from MyOcean (offshore, no upwelling)", "Chlorophyll from MyOcean (upwelling [divided by 4])", "Chlorophyll from model"])
     display(fig)
     return nothing
 end
